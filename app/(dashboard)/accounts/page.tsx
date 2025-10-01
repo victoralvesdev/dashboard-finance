@@ -1,23 +1,30 @@
 "use client";
 
-import { Loader2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { DataTable } from "@/components/data-table";
-
-import { columns } from "./columns";
+import { getBillsColumns, BillResponseType } from "./bills-columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { useGetAccounts } from "@/features/accounts/api/use-get-accounts";
-import { useNewAccount } from "@/features/accounts/hooks/use-new-account";
-import { useBulkDeleteAccounts } from "@/features/accounts/api/use-bulk-delete-accounts";
+import { useGetBills } from "@/features/bills/api/use-get-bills";
+import { TransactionDetailModal } from "../transactions/transaction-detail-modal";
 
 const AccountsPage = () => {
-  const newAccount = useNewAccount();
-  const { data, isLoading } = useGetAccounts();
-  const { mutate, isPending } = useBulkDeleteAccounts();
+  const { data, isLoading } = useGetBills();
+  const [selectedBill, setSelectedBill] = useState<BillResponseType | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isDisabled = isPending || isLoading;
+  const handleOpenDetail = (bill: BillResponseType) => {
+    setSelectedBill(bill);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedBill(null), 300);
+  };
+
+  const columns = getBillsColumns({ onOpenDetail: handleOpenDetail });
 
   if (isLoading) {
     return (
@@ -37,31 +44,35 @@ const AccountsPage = () => {
   }
 
   return (
-    <div className="max-w-screen-2xl mx-auto w-full pb-10 -mt-24">
-      <Card className="border-none drop-shadow-sm">
-        <CardHeader className="gap-y-2 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle className="text-xl line-clamp-1">
-            Página de contas
-          </CardTitle>
-          <Button size="sm" onClick={newAccount.onOpen}>
-            <Plus className="size-4 mr-2" />
-            Adicionar
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            filterKey="name"
-            data={data || []}
-            columns={columns}
-            disabled={isDisabled}
-            onDelete={(rows) => {
-              const ids = rows.map((row) => row.original.id);
-              mutate({ ids });
-            }}
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <div className="max-w-screen-2xl mx-auto w-full pb-10 -mt-24">
+        <Card className="border-none drop-shadow-sm">
+          <CardHeader className="gap-y-2 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="text-xl line-clamp-1">
+              Minhas Contas
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {data?.length || 0} conta(s) encontrada(s)
+            </p>
+          </CardHeader>
+          <CardContent>
+            <DataTable
+              filterKey="description"
+              data={data || []}
+              columns={columns}
+              disabled={isLoading}
+              onDelete={() => {}}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <TransactionDetailModal
+        transaction={selectedBill}
+        open={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </>
   );
 };
 

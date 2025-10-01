@@ -11,7 +11,11 @@ import {
 
 import { CategoryTooltip } from "@/components/category-tooltip";
 
-const COLORS = ["#0088FE", "#00C49F", "#AF19FF", "#FF1919"];
+const COLOR_MAP: Record<string, string> = {
+  "Pagas": "#10b981",
+  "Pendentes": "#eab308",
+  "Urgentes": "#ef4444",
+};
 
 export type PieVariantProps = {
   data: {
@@ -21,6 +25,10 @@ export type PieVariantProps = {
 };
 
 export const PieVariant = ({ data }: PieVariantProps) => {
+  const getColor = (name: string) => {
+    return COLOR_MAP[name] || "#94a3b8";
+  };
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <PieChart>
@@ -68,8 +76,8 @@ export const PieVariant = ({ data }: PieVariantProps) => {
           fill="#8884d8"
           labelLine={false}
         >
-          {data.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={getColor(entry.name)} />
           ))}
         </Pie>
       </PieChart>

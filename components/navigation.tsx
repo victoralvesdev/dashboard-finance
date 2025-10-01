@@ -14,7 +14,6 @@ const routes = [
   { href: "/", label: "Visão Geral" },
   { href: "/transactions", label: "Transações" },
   { href: "/accounts", label: "Contas" },
-  { href: "/categories", label: "Categorias" },
   { href: "/settings", label: "Configurações" },
 ];
 

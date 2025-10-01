@@ -1,7 +1,7 @@
 "use client";
 
 import { DataCard, DataCardLoading } from "./data-card";
-import { PiggyBankIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
+import { HomeIcon, TrendingDownIcon } from "lucide-react";
 
 import { formatDateRange } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
@@ -18,8 +18,7 @@ export const DataGrid = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-2 mb-8">
-        <DataCardLoading />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-2 mb-8">
         <DataCardLoading />
         <DataCardLoading />
       </div>
@@ -27,30 +26,20 @@ export const DataGrid = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-2 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-2 mb-8">
       <DataCard
-        title="Restante"
-        icon={PiggyBankIcon}
+        title="Contas da Casa"
+        icon={HomeIcon}
         variant="default"
         dateRange={dateRangeLabel}
         value={data?.remainingAmount}
-        percentageChange={data?.remainingChange}
-      />
-      <DataCard
-        variant="success"
-        title="Rendimentos"
-        icon={TrendingUpIcon}
-        dateRange={dateRangeLabel}
-        value={data?.incomeAmount}
-        percentageChange={data?.incomeChange}
       />
       <DataCard
         variant="danger"
-        title="Despesas"
+        title="Despesas Individuais"
         icon={TrendingDownIcon}
         dateRange={dateRangeLabel}
         value={data?.expensesAmount}
-        percentageChange={data?.expensesChange}
       />
     </div>
   );

@@ -4,13 +4,13 @@ import { zValidator } from "@hono/zod-validator";
 
 import { and, eq, inArray } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
-import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
+import { supabaseMiddleware, getAuth } from "@/lib/supabase-auth";
 
 import { db } from "@/db/drizzle";
 import { accounts, insertAccountSchema } from "@/db/schema";
 
 const app = new Hono()
-  .get("/", clerkMiddleware(), async (c) => {
+  .get("/", supabaseMiddleware(), async (c) => {
     const auth = getAuth(c);
 
     if (!auth?.userId) {
@@ -29,7 +29,7 @@ const app = new Hono()
   })
   .get(
     "/:id",
-    clerkMiddleware(),
+    supabaseMiddleware(),
     zValidator("param", z.object({ id: z.string().optional() })),
     async (c) => {
       const auth = getAuth(c);
@@ -60,7 +60,7 @@ const app = new Hono()
   )
   .post(
     "/",
-    clerkMiddleware(),
+    supabaseMiddleware(),
     zValidator("json", insertAccountSchema.pick({ name: true })),
     async (c) => {
       const auth = getAuth(c);
@@ -84,7 +84,7 @@ const app = new Hono()
   )
   .post(
     "/bulk-delete",
-    clerkMiddleware(),
+    supabaseMiddleware(),
     zValidator("json", z.object({ ids: z.array(z.string()) })),
     async (c) => {
       const auth = getAuth(c);
@@ -104,7 +104,7 @@ const app = new Hono()
   )
   .patch(
     "/:id",
-    clerkMiddleware(),
+    supabaseMiddleware(),
     zValidator("param", z.object({ id: z.string().optional() })),
     zValidator("json", insertAccountSchema.pick({ name: true })),
     async (c) => {
@@ -135,7 +135,7 @@ const app = new Hono()
   )
   .delete(
     "/:id",
-    clerkMiddleware(),
+    supabaseMiddleware(),
     zValidator("param", z.object({ id: z.string().optional() })),
     async (c) => {
       const auth = getAuth(c);

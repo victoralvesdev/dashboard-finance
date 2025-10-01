@@ -2,8 +2,7 @@
 
 import { InferResponseType } from "hono";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Image as ImageIcon, Eye } from "lucide-react";
-
+import { ArrowUpDown, Eye } from "lucide-react";
 import { client } from "@/lib/hono";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
@@ -12,16 +11,51 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export type ResponseType = InferResponseType<
-  typeof client.api.transactions.$get,
+export type BillResponseType = InferResponseType<
+  typeof client.api.bills.$get,
   200
 >["data"][0];
 
 type ColumnsProps = {
-  onOpenDetail: (transaction: ResponseType) => void;
+  onOpenDetail: (bill: BillResponseType) => void;
 };
 
-export const getColumns = ({ onOpenDetail }: ColumnsProps): ColumnDef<ResponseType>[] => [
+const getBillStatus = (bill: BillResponseType) => {
+  if (bill.is_paid) return "paid";
+
+  const today = new Date();
+  const dueDate = new Date(bill.due_date);
+
+  if (dueDate < today) return "overdue";
+  return "pending";
+};
+
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "paid":
+      return (
+        <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600">
+          Pago
+        </Badge>
+      );
+    case "overdue":
+      return (
+        <Badge variant="destructive">
+          Em Atraso
+        </Badge>
+      );
+    case "pending":
+      return (
+        <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">
+          Pendente
+        </Badge>
+      );
+    default:
+      return null;
+  }
+};
+
+export const getBillsColumns = ({ onOpenDetail }: ColumnsProps): ColumnDef<BillResponseType>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -43,26 +77,6 @@ export const getColumns = ({ onOpenDetail }: ColumnsProps): ColumnDef<ResponseTy
     ),
   },
   {
-    accessorKey: "paid_at",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Data de Pagamento
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = row.getValue("paid_at") as string;
-      return (
-        <span>{format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
-      );
-    },
-  },
-  {
     accessorKey: "description",
     header: ({ column }) => {
       return (
@@ -76,7 +90,7 @@ export const getColumns = ({ onOpenDetail }: ColumnsProps): ColumnDef<ResponseTy
       );
     },
     cell: ({ row }) => {
-      return <span>{row.original.description}</span>;
+      return <span className="font-medium">{row.original.description}</span>;
     },
   },
   {
@@ -95,51 +109,50 @@ export const getColumns = ({ onOpenDetail }: ColumnsProps): ColumnDef<ResponseTy
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("amount"));
       return (
-        <Badge
-          variant="default"
-          className="text-xs font-medium px-3.5 py-2.5"
-        >
+        <span className="font-semibold">
           {formatCurrency(amount)}
-        </Badge>
+        </span>
       );
     },
   },
   {
-    accessorKey: "is_shared",
+    accessorKey: "due_date",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Tipo
+          Vencimento
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
+      const date = row.getValue("due_date") as string;
+      return (
+        <span>{format(new Date(date), "dd/MM/yyyy", { locale: ptBR })}</span>
+      );
+    },
+  },
+  {
+    accessorKey: "is_shared",
+    header: "Tipo",
+    cell: ({ row }) => {
       const isShared = row.getValue("is_shared") as boolean;
       return (
-        <Badge variant={isShared ? "default" : "secondary"}>
+        <Badge variant={isShared ? "default" : "outline"}>
           {isShared ? "Casa" : "Individual"}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "proof_image_url",
-    header: "Comprovante",
+    id: "status",
+    header: "Status",
     cell: ({ row }) => {
-      const proof = row.getValue("proof_image_url") as string | null;
-      return proof ? (
-        <div className="flex justify-center">
-          <ImageIcon className="size-5 text-emerald-500" />
-        </div>
-      ) : (
-        <div className="flex justify-center">
-          <span className="text-muted-foreground text-xs">Sem comprovante</span>
-        </div>
-      );
+      const status = getBillStatus(row.original);
+      return getStatusBadge(status);
     },
   },
   {

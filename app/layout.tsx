@@ -1,9 +1,6 @@
 import { Toaster } from "sonner";
 import type { Metadata } from "next";
 
-import { ptBR } from "@clerk/localizations";
-import { ClerkProvider } from "@clerk/nextjs";
-
 import "./globals.css";
 import { Inter } from "next/font/google";
 
@@ -37,16 +34,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider localization={ptBR}>
-      <html lang="pt-BR">
-        <body className={inter.className}>
-          <QueryProvider>
-            <SheetProvider />
-            <Toaster />
-            {children}
-          </QueryProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="pt-BR">
+      <body className={inter.className}>
+        <QueryProvider>
+          <SheetProvider />
+          <Toaster />
+          {children}
+        </QueryProvider>
+      </body>
+    </html>
   );
 }

@@ -16,7 +16,7 @@ import { useHideInfos } from "@/hooks/use-hide-infos";
 const boxVariants = cva("shrink-0 rounded-md p-3", {
   variants: {
     variant: {
-      default: "bg-blue-500/20",
+      default: "bg-purple-500/20",
       success: "bg-emerald-500/20",
       danger: "bg-rose-500/20",
       warning: "bg-yellow-500/20",
@@ -28,7 +28,7 @@ const boxVariants = cva("shrink-0 rounded-md p-3", {
 const iconVariant = cva("size-6", {
   variants: {
     variant: {
-      default: "fill-blue-500",
+      default: "fill-purple-500",
       success: "fill-emerald-500",
       danger: "fill-rose-500",
       warning: "fill-yellow-500",
@@ -73,9 +73,9 @@ export const DataCard = ({
       </CardHeader>
       <CardContent>
         {hideInfos ? (
-          <Skeleton className="shrink-0 w-24 h-8 mb-2" />
+          <Skeleton className="shrink-0 w-24 h-8" />
         ) : (
-          <h1 className="font-bold text-2xl mb-2 line-clamp-1 break-all">
+          <h1 className="font-bold text-2xl line-clamp-1 break-all">
             <CountUp
               start={0}
               end={value}
@@ -85,19 +85,6 @@ export const DataCard = ({
               formattingFn={formatCurrency}
             />
           </h1>
-        )}
-        {hideInfos ? (
-          <Skeleton className="shrink-0 w-40 h-4" />
-        ) : (
-          <p
-            className={cn(
-              "text-muted-foreground text-sm line-clamp-1",
-              percentageChange > 0 ? "text-emerald-500" : "text-rose-500"
-            )}
-          >
-            {formatPercentage(percentageChange, { addPrefix: true })} do mês
-            anterior
-          </p>
         )}
       </CardContent>
     </Card>

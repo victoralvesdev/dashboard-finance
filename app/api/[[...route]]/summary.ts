@@ -4,7 +4,7 @@ import { subDays, parse, differenceInDays } from "date-fns";
 
 import { db } from "@/db/drizzle";
 import { zValidator } from "@hono/zod-validator";
-import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
+import { supabaseMiddleware, getAuth } from "@/lib/supabase-auth";
 
 import { accounts, categories, transactions } from "@/db/schema";
 import { calculatePercentageChange, fillMissingDays } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { lt, and, eq, gte, lte, sql, sum, desc } from "drizzle-orm";
 
 const app = new Hono().get(
   "/",
-  clerkMiddleware(),
+  supabaseMiddleware(),
   zValidator(
     "query",
     z.object({

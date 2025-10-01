@@ -33,8 +33,8 @@ export const DateFilter = () => {
   const from = params.get("from") || "";
   const to = params.get("to") || "";
 
-  const defaultTo = new Date();
-  const defaultFrom = subDays(defaultTo, 30);
+  const defaultFrom = new Date(); // Dia atual
+  const defaultTo = new Date(defaultFrom.getFullYear(), defaultFrom.getMonth() + 1, 0); // Último dia do mês atual
 
   const paramState = {
     from: from ? addDays(new Date(from), 1) : defaultFrom,
@@ -59,8 +59,12 @@ export const DateFilter = () => {
   };
 
   const handleReset = () => {
-    setDate(undefined);
-    pushToUrl(undefined);
+    const resetRange = {
+      from: defaultFrom,
+      to: defaultTo,
+    };
+    setDate(resetRange);
+    pushToUrl(resetRange);
   };
 
   return (

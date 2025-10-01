@@ -1,20 +1,18 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 
-import summary from "./summary";
-import accounts from "./accounts";
-import categories from "./categories";
+import billsSummary from "./bills-summary";
 import transactions from "./transactions";
+import bills from "./bills";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const app = new Hono().basePath("/api");
 
 const routes = app
-  .route("/summary", summary)
-  .route("/accounts", accounts)
-  .route("/categories", categories)
-  .route("/transactions", transactions);
+  .route("/summary", billsSummary)
+  .route("/transactions", transactions)
+  .route("/bills", bills);
 
 export const GET = handle(app);
 export const POST = handle(app);

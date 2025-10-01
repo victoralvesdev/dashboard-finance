@@ -1,20 +1,9 @@
 import { z } from "zod";
 import { Hono } from "hono";
+import { parse } from "date-fns";
 import { zValidator } from "@hono/zod-validator";
-
-import { createId } from "@paralleldrive/cuid2";
-import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
-import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
-
-import { db } from "@/db/drizzle";
-import { parse, subDays } from "date-fns";
-
-import {
-  accounts,
-  categories,
-  transactions,
-  insertTransactionSchema,
-} from "@/db/schema";
+import { getCookie } from "hono/cookie";
+import { supabase } from "@/lib/supabase";
 
 const app = new Hono()
   .get(
@@ -22,262 +11,191 @@ const app = new Hono()
     zValidator(
       "query",
       z.object({
-        from: z.string().optional(),
         to: z.string().optional(),
-        accountId: z.string().optional(),
+        from: z.string().optional(),
       })
     ),
-    clerkMiddleware(),
     async (c) => {
-      const auth = getAuth(c);
-      const { from, to, accountId } = c.req.valid("query");
+      console.log("\n\n🚀 ============ TRANSACTIONS API CALLED ============");
+      const { to, from } = c.req.valid("query");
+      console.log("📝 Query params:", { to, from });
 
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
+      // Get user from cookie
+      const userCookie = getCookie(c, "user");
+      console.log("🍪 Raw cookie:", userCookie);
+
+      if (!userCookie) {
+        console.log("❌ No cookie found");
+        return c.json({ error: "Unauthorized - no cookie" }, 401);
+      }
+
+      let user;
+      try {
+        user = JSON.parse(userCookie);
+        console.log("✅ Parsed user:", user);
+      } catch (error) {
+        console.log("❌ Error parsing cookie:", error);
+        return c.json({ error: "Invalid cookie" }, 401);
+      }
+
+      if (!user?.id) {
+        console.log("❌ No user ID in cookie");
+        return c.json({ error: "Unauthorized - no user ID" }, 401);
+      }
+
+      console.log("👤 Fetching household for user:", user.id);
+
+      // Get user's household_id
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("household_id")
+        .eq("id", user.id)
+        .single();
+
+      console.log("📊 User data from DB:", userData);
+      console.log("❌ User error:", userError);
+
+      if (userError || !userData) {
+        return c.json({ error: "User not found", details: userError }, 404);
       }
 
       const defaultTo = new Date();
-      const defaultFrom = subDays(defaultTo, 30);
+      defaultTo.setFullYear(defaultTo.getFullYear() + 1);
+      const defaultFrom = new Date();
+      defaultFrom.setFullYear(defaultFrom.getFullYear() - 1);
 
-      const startDate = from
-        ? parse(from, "yyyy-MM-dd", new Date())
-        : defaultFrom;
+      const startDate = from ? parse(from, "yyyy-MM-dd", new Date()) : defaultFrom;
       const endDate = to ? parse(to, "yyyy-MM-dd", new Date()) : defaultTo;
 
-      const data = await db
-        .select({
-          id: transactions.id,
-          date: transactions.date,
-          category: categories.name,
-          categoryId: transactions.categoryId,
-          payee: transactions.payee,
-          amount: transactions.amount,
-          notes: transactions.notes,
-          account: accounts.name,
-          accountId: transactions.accountId,
-        })
-        .from(transactions)
-        .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .where(
-          and(
-            accountId ? eq(transactions.accountId, accountId) : undefined,
-            eq(accounts.userId, auth.userId),
-            gte(transactions.date, startDate),
-            lte(transactions.date, endDate)
-          )
-        )
-        .orderBy(desc(transactions.date));
+      console.log("📅 Date range:", startDate, "to", endDate);
+      console.log("🏠 Household ID:", userData.household_id);
 
-      return c.json({ data });
-    }
-  )
-  .get(
-    "/:id",
-    clerkMiddleware(),
-    zValidator("param", z.object({ id: z.string().optional() })),
-    async (c) => {
-      const auth = getAuth(c);
-      const { id } = c.req.valid("param");
+      // Fetch paid bills (both household and individual)
+      const { data: paidBills, error: billsError } = await supabase
+        .from("bills")
+        .select(`
+          id,
+          description,
+          amount,
+          due_date,
+          paid_at,
+          is_shared,
+          proof_image_url,
+          paid_by
+        `)
+        .eq("household_id", userData.household_id)
+        .eq("is_paid", true)
+        .gte("paid_at", startDate.toISOString())
+        .lte("paid_at", endDate.toISOString())
+        .order("paid_at", { ascending: false });
 
-      if (!id) {
-        return c.json({ error: "Missing id" }, 400);
+      console.log("💳 Paid bills found:", paidBills?.length, billsError);
+
+      if (billsError) {
+        return c.json({ error: "Failed to fetch transactions", details: billsError }, 500);
       }
 
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
+      const responseData = {
+        data: paidBills || [],
+      };
 
-      const [data] = await db
-        .select({
-          id: transactions.id,
-          date: transactions.date,
-          categoryId: transactions.categoryId,
-          payee: transactions.payee,
-          amount: transactions.amount,
-          notes: transactions.notes,
-          accountId: transactions.accountId,
-        })
-        .from(transactions)
-        .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-        .where(and(eq(transactions.id, id), eq(accounts.userId, auth.userId)));
+      console.log("📤 Returning data:", JSON.stringify(responseData, null, 2));
+      console.log("============ END TRANSACTIONS API ============\n\n");
 
-      if (!data) {
-        return c.json({ error: "Not found" }, 404);
-      }
-
-      return c.json({ data });
-    }
-  )
-  .post(
-    "/",
-    clerkMiddleware(),
-    zValidator("json", insertTransactionSchema.omit({ id: true })),
-    async (c) => {
-      const auth = getAuth(c);
-      const values = c.req.valid("json");
-
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      const [data] = await db
-        .insert(transactions)
-        .values({
-          id: createId(),
-          ...values,
-        })
-        .returning();
-
-      return c.json({ data });
-    }
-  )
-  .post(
-    "/bulk-create",
-    clerkMiddleware(),
-    zValidator("json", z.array(insertTransactionSchema.omit({ id: true }))),
-    async (c) => {
-      const auth = getAuth(c);
-      const values = c.req.valid("json");
-
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      const [data] = await db
-        .insert(transactions)
-        .values(
-          values.map((value) => ({
-            id: createId(),
-            ...value,
-          }))
-        )
-        .returning();
-
-      return c.json({ data });
-    }
-  )
-  .post(
-    "/bulk-delete",
-    clerkMiddleware(),
-    zValidator("json", z.object({ ids: z.array(z.string()) })),
-    async (c) => {
-      const auth = getAuth(c);
-      const { ids } = c.req.valid("json");
-
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      const transactionsToDelete = db.$with("transactions_to_delete").as(
-        db
-          .select({ id: transactions.id })
-          .from(transactions)
-          .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .where(
-            and(inArray(transactions.id, ids), eq(accounts.userId, auth.userId))
-          )
-      );
-
-      const data = await db
-        .with(transactionsToDelete)
-        .delete(transactions)
-        .where(
-          inArray(
-            transactions.id,
-            sql`(select id from ${transactionsToDelete})`
-          )
-        )
-        .returning({ id: transactions.id });
-
-      return c.json({ data });
+      return c.json(responseData);
     }
   )
   .patch(
     "/:id",
-    clerkMiddleware(),
-    zValidator("param", z.object({ id: z.string().optional() })),
-    zValidator("json", insertTransactionSchema.omit({ id: true })),
+    zValidator(
+      "param",
+      z.object({
+        id: z.string(),
+      })
+    ),
+    zValidator(
+      "json",
+      z.object({
+        description: z.string().optional(),
+        amount: z.string().optional(),
+        proof_image_url: z.string().nullable().optional(),
+      })
+    ),
     async (c) => {
-      const auth = getAuth(c);
+      console.log("\n\n🚀 ============ UPDATE TRANSACTION API CALLED ============");
       const { id } = c.req.valid("param");
-      const values = c.req.valid("json");
+      const updates = c.req.valid("json");
+      console.log("📝 Transaction ID:", id);
+      console.log("📝 Updates:", updates);
 
-      if (!id) {
-        return c.json({ error: "Missing id" }, 400);
+      // Get user from cookie
+      const userCookie = getCookie(c, "user");
+
+      if (!userCookie) {
+        console.log("❌ No cookie found");
+        return c.json({ error: "Unauthorized - no cookie" }, 401);
       }
 
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
+      let user;
+      try {
+        user = JSON.parse(userCookie);
+        console.log("✅ Parsed user:", user);
+      } catch (error) {
+        console.log("❌ Error parsing cookie:", error);
+        return c.json({ error: "Invalid cookie" }, 401);
       }
 
-      const transactionsToUpdate = db.$with("transactions_to_update").as(
-        db
-          .select({ id: transactions.id })
-          .from(transactions)
-          .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .where(and(eq(transactions.id, id), eq(accounts.userId, auth.userId)))
-      );
-
-      const [data] = await db
-        .with(transactionsToUpdate)
-        .update(transactions)
-        .set(values)
-        .where(
-          inArray(
-            transactions.id,
-            sql`(select id from ${transactionsToUpdate})`
-          )
-        )
-        .returning();
-
-      if (!data) {
-        return c.json({ error: "Not found" }, 404);
+      if (!user?.id) {
+        console.log("❌ No user ID in cookie");
+        return c.json({ error: "Unauthorized - no user ID" }, 401);
       }
 
-      return c.json({ data });
-    }
-  )
-  .delete(
-    "/:id",
-    clerkMiddleware(),
-    zValidator("param", z.object({ id: z.string().optional() })),
-    async (c) => {
-      const auth = getAuth(c);
-      const { id } = c.req.valid("param");
+      // Get user's household_id
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("household_id")
+        .eq("id", user.id)
+        .single();
 
-      if (!id) {
-        return c.json({ error: "Missing id" }, 400);
+      if (userError || !userData) {
+        return c.json({ error: "User not found", details: userError }, 404);
       }
 
-      if (!auth?.userId) {
-        return c.json({ error: "Unauthorized" }, 401);
+      // Check if bill belongs to user's household
+      const { data: bill, error: billError } = await supabase
+        .from("bills")
+        .select("household_id")
+        .eq("id", id)
+        .single();
+
+      if (billError || !bill) {
+        return c.json({ error: "Transaction not found" }, 404);
       }
 
-      const transactionsToDelete = db.$with("transactions_to_delete").as(
-        db
-          .select({ id: transactions.id })
-          .from(transactions)
-          .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-          .where(and(eq(transactions.id, id), eq(accounts.userId, auth.userId)))
-      );
-
-      const [data] = await db
-        .with(transactionsToDelete)
-        .delete(transactions)
-        .where(
-          inArray(
-            transactions.id,
-            sql`(select id from ${transactionsToDelete})`
-          )
-        )
-        .returning({ id: transactions.id });
-
-      if (!data) {
-        return c.json({ error: "Not found" }, 404);
+      if (bill.household_id !== userData.household_id) {
+        return c.json({ error: "Unauthorized - not your household" }, 403);
       }
 
-      return c.json({ data });
+      // Update the bill
+      const { data: updatedBill, error: updateError } = await supabase
+        .from("bills")
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.log("❌ Update error:", updateError);
+        return c.json({ error: "Failed to update transaction", details: updateError }, 500);
+      }
+
+      console.log("✅ Transaction updated:", updatedBill);
+      console.log("============ END UPDATE TRANSACTION API ============\n\n");
+
+      return c.json({ data: updatedBill });
     }
   );
 
