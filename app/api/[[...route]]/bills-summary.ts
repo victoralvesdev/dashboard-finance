@@ -101,7 +101,7 @@ const app = new Hono().get(
     // Last period data
     const { data: lastHouseholdBills } = await supabase
       .from("bills")
-      .select("amount")
+      .select("amount, is_paid")
       .eq("household_id", userData.household_id)
       .eq("is_shared", true)
       .gte("due_date", lastPeriodStart.toISOString().split("T")[0])
@@ -109,7 +109,7 @@ const app = new Hono().get(
 
     const { data: lastIndividualBills } = await supabase
       .from("bills")
-      .select("amount")
+      .select("amount, is_paid")
       .eq("household_id", userData.household_id)
       .eq("is_shared", false)
       .eq("paid_by", user.id)
