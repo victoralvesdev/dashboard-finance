@@ -1,7 +1,7 @@
-<h1>Financify</h1>
+<h1>Dashboard Finance</h1>
 
 ### Sobre o projeto
-O finanficy é uma plataforma de gerenciamento financeiro, com o intuíto de você organizar melhor as suas finanças, podendo criar cartões referentes aos que você usa na vida real, criar categorias de gastos, realizar entradas ou retiradas financeiras de forma manual ou via Planilha (XLSX), e tudo isso podendo ser filtrado por perídos de datas e exibido em formas de gráficos e cards, para você ter uma plena noção de quanto você ganhou naquele período, quanto você gastou e quanto ainda tem, facilitando bastante o seu controle pessoal financeiro.
+Dashboard de gerenciamento financeiro para controle de gastos domésticos, permitindo organizar contas compartilhadas da casa e despesas individuais. O sistema possui controle de usuários por household (família/casa), filtros por período, gráficos de status de pagamento, e tema escuro/claro.
 
 ---
 
@@ -10,11 +10,10 @@ O finanficy é uma plataforma de gerenciamento financeiro, com o intuíto de voc
 #### Front-end:
 - Next.JS 14
 - TypeScript
-- Clerk Auth
+- Supabase Auth
 - Shadcn UI
 - Tailwind CSS
 - React Hook Form
-- Papaparse
 - Zustand
 - Zod
 - Recharts
@@ -22,16 +21,21 @@ O finanficy é uma plataforma de gerenciamento financeiro, com o intuíto de voc
 ### Back-end
 - Hono.JS
 - TypeScript
-- Drizzle ORM
-- Neon Database
-- Clerk Auth Backend
+- Supabase PostgreSQL
+- Cookie-based Authentication
 
 ---
 
-### Intuíto do Projeto
-Esse projeto foi desenvolvido pois eu estava procurando algo para gerenciar melhor as minhas finanças e não estava achando nada que me agradasse, isso coincidiu com a vontade que eu estava de estudar sobre o Next 14 e suas tecnologias/bibliotecas auxiliares, essa foi a minha motivação e foi um projeto que agredou muito conhecimento na minha stack de desenvolvedor. Tenho em mente novas features que aos poucos irei implementando, obrigado por chegar até aqui, se gostou do projeto, deixe uma estrelinha! ⭐
+### Funcionalidades
+- 📊 Dashboard com visão geral de contas da casa e despesas individuais
+- 💰 Controle de contas pagas, pendentes e urgentes (≤3 dias)
+- 📈 Gráficos de status de pagamento por categoria
+- 🏠 Sistema multi-usuário por household (família compartilhada)
+- 📋 Página de transações com histórico de pagamentos
+- 🧾 Upload de comprovantes de pagamento
+- 🌓 Tema escuro/claro
+- 🔒 Autenticação segura com Supabase
 
 ---
 
-### Deploy do projeto: [Financify](https://financify-io.vercel.app/)
-#### Desenvolvido por <>[Davi Mateus](https://www.linkedin.com/in/davimateusg/)</>
+### Desenvolvido por Victor Alves
