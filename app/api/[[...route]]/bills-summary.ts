@@ -84,7 +84,11 @@ const app = new Hono().get(
       .gte("due_date", startDate.toISOString().split("T")[0])
       .lte("due_date", endDate.toISOString().split("T")[0]);
 
-    console.log("🏠 Household bills:", householdBills?.length, "found", householdError);
+    console.log("🏠 Household bills:", householdBills?.length, "found");
+    if (householdError) {
+      console.error("❌ Household bills error:", householdError);
+    }
+    console.log("📊 Household bills data:", householdBills);
 
     // Fetch individual bills (is_shared = false) - only for current user
     const { data: individualBills, error: individualError } = await supabase
@@ -96,7 +100,11 @@ const app = new Hono().get(
       .gte("due_date", startDate.toISOString().split("T")[0])
       .lte("due_date", endDate.toISOString().split("T")[0]);
 
-    console.log("👤 Individual bills for user:", individualBills?.length, "found", individualError);
+    console.log("👤 Individual bills for user:", individualBills?.length, "found");
+    if (individualError) {
+      console.error("❌ Individual bills error:", individualError);
+    }
+    console.log("📊 Individual bills data:", individualBills);
 
     // Last period data
     const { data: lastHouseholdBills } = await supabase
