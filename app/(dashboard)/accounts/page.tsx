@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import { getBillsColumns, BillResponseType } from "./bills-columns";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetBills } from "@/features/bills/api/use-get-bills";
 import { TransactionDetailModal } from "../transactions/transaction-detail-modal";
 
-const AccountsPage = () => {
+const AccountsContent = () => {
   const { data, isLoading } = useGetBills();
   const [selectedBill, setSelectedBill] = useState<BillResponseType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,6 +73,29 @@ const AccountsPage = () => {
         onClose={handleCloseModal}
       />
     </>
+  );
+};
+
+const AccountsPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-screen-2xl mx-auto w-full pb-10 -mt-24">
+          <Card className="border-none drop-shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] w-full flex items-center justify-center">
+                <Loader2 className="size-8 text-slate-300 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <AccountsContent />
+    </Suspense>
   );
 };
 

@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useGetSummary } from "@/features/summary/api/use-get-summary";
 import { PaymentStatusBar, PaymentStatusBarLoading } from "@/components/payment-status-bar";
 
-export const DataCharts = () => {
+const DataChartsContent = () => {
   const { data, isLoading } = useGetSummary();
 
   if (isLoading) {
@@ -25,5 +26,21 @@ export const DataCharts = () => {
         />
       </div>
     </div>
+  );
+};
+
+export const DataCharts = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid grid-cols-1 gap-8">
+          <div className="col-span-1">
+            <PaymentStatusBarLoading />
+          </div>
+        </div>
+      }
+    >
+      <DataChartsContent />
+    </Suspense>
   );
 };

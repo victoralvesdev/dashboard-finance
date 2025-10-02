@@ -1,7 +1,7 @@
 "use client";
 
 import qs from "query-string";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -22,7 +22,7 @@ import { ChevronDown } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export const DateFilter = () => {
+const DateFilterContent = () => {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -117,5 +117,13 @@ export const DateFilter = () => {
         </div>
       </PopoverContent>
     </Popover>
+  );
+};
+
+export const DateFilter = () => {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <DateFilterContent />
+    </Suspense>
   );
 };

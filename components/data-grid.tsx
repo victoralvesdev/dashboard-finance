@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { DataCard, DataCardLoading } from "./data-card";
 import { HomeIcon, TrendingDownIcon } from "lucide-react";
 
@@ -7,7 +8,7 @@ import { formatDateRange } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 import { useGetSummary } from "@/features/summary/api/use-get-summary";
 
-export const DataGrid = () => {
+const DataGridContent = () => {
   const params = useSearchParams();
   const { data, isLoading } = useGetSummary();
 
@@ -42,5 +43,20 @@ export const DataGrid = () => {
         value={data?.expensesAmount}
       />
     </div>
+  );
+};
+
+export const DataGrid = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-2 mb-8">
+          <DataCardLoading />
+          <DataCardLoading />
+        </div>
+      }
+    >
+      <DataGridContent />
+    </Suspense>
   );
 };

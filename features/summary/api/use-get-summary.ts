@@ -2,12 +2,13 @@ import { client } from "@/lib/hono";
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 
 export const useGetSummary = () => {
   const params = useSearchParams();
 
-  const from = params.get("from") || "";
-  const to = params.get("to") || "";
+  const from = useMemo(() => params.get("from") || "", [params]);
+  const to = useMemo(() => params.get("to") || "", [params]);
 
   const query = useQuery({
     queryKey: ["summary", { from, to }],
